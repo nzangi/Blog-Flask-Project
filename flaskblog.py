@@ -1,6 +1,6 @@
 # save this as app.py
 import os
-from flask import Flask
+from flask import Flask,url_for,redirect,flash
 from flask import render_template, url_for
 from forms import SignUpForm, SignInForm
 
@@ -53,15 +53,24 @@ def about():
     return render_template('about.html', title="About")
 
 
-@app.route("/signup")
+@app.route("/signup",methods=['GET', 'POST'])
 def signup():
     form = SignUpForm()
+    if form.validate_on_submit():
+        flash(f'Account created for {form.username.data}','success')
+        return redirect(url_for('home'))
     return render_template('signup.html', title="Sign Up",form=form)
 
 
-@app.route("/signin")
+@app.route("/signin", methods=['GET', 'POST'])
 def signin():
     form = SignInForm()
+    if form.validate_on_submit():
+        if form.username.data == "nzangi" and form.password.data=="12345678":
+            flash(f'{form.username.data} you have been logged in, welcome!', 'success')
+            return redirect(url_for('home'))
+        else:
+            flash("Sign in unsuccessful,please recheck username and password",'danger')
     return render_template('signin.html', title="Sign In",form=form)
 
 
