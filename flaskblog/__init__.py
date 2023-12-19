@@ -1,7 +1,9 @@
-# save this as app.py
+# save this as run.py
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
+from flask_login import LoginManager
 
 app = Flask(__name__)
 SECRET_KEY = os.getenv('SECRET_KEY')
@@ -11,5 +13,7 @@ if SECRET_KEY is not None:
 else:
     app.config['SECRET_KEY'] = '213923aec9184951d2f628c16c4d1c67'
 db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
+login_manager = LoginManager(app)
 
 from flaskblog import routes

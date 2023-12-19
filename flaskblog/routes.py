@@ -1,7 +1,8 @@
 from flask import redirect, flash,render_template, url_for
 from flaskblog.forms import SignUpForm, SignInForm
 from flaskblog.models import User,Post
-from flaskblog import app
+from flaskblog import app,bcrypt,db
+from flask_login import login_user
 
 posts = [
     {
@@ -46,8 +47,12 @@ def about():
 def signup():
     form = SignUpForm()
     if form.validate_on_submit():
-        flash(f'Account created for {form.username.data}', 'success')
-        return redirect(url_for('home'))
+        hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
+        user = User(username=form.username.data,email=form.email.data,password=hashed_password)
+        db.session.add(user)
+        db.session.commit()
+        flash(f'Account created successful, you can now login!', 'success')
+        return redirect(url_for('signin'))
     return render_template('signup.html', title="Sign Up", form=form)
 
 
@@ -55,7 +60,9 @@ def signup():
 def signin():
     form = SignInForm()
     if form.validate_on_submit():
-        if form.username.data == "nzangi" and form.password.data == "12345678":
+        user = User.query.filter_by(username=form.username.data)
+        if user and bcrypt.check_password_hash(user.password,form.password.data):
+            login_user(user,remember=form.remember_me.data)
             flash(f'{form.username.data} you have been logged in, welcome!', 'success')
             return redirect(url_for('home'))
         else:
