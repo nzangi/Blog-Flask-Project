@@ -1,8 +1,8 @@
-from flask import redirect, flash, render_template, url_for,request
-from flaskblog.forms import SignUpForm, SignInForm
+from flask import redirect, flash, render_template, url_for, request
+from flaskblog.forms import SignUpForm, SignInForm,UpdateAccountForm
 from flaskblog.models import User, Post
 from flaskblog import app, bcrypt, db
-from flask_login import login_user, current_user, logout_user,login_required
+from flask_login import login_user, current_user, logout_user, login_required
 
 posts = [
     {
@@ -62,26 +62,40 @@ def signup():
 def signin():
     if current_user.is_authenticated:
         return redirect(url_for('home'))
-
     form = SignInForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
         if user and bcrypt.check_password_hash(user.password, form.password.data):
             login_user(user, remember=form.remember_me.data)
             flash(f'{form.username.data} you have been logged in, welcome!', 'success')
-            # next_page = request.args.get('next')
-            # print(next_page)
-            return redirect(request.args.get('next', url_for('home')))
-            # return redirect(next_page) if next_page else redirect(url_for('home'))
+            next_page = request.args.get('next')
+            print(next_page)
+            return redirect(next_page) if next_page else redirect(url_for('home'))
         else:
-            flash("Sign in unsuccessful,please recheck username and password", 'danger')
-    return render_template('signin.html', title="Sign In", form=form)
+            flash('Login Unsuccessful. Please recheck email and password', 'danger')
+    return render_template('signin.html', title='Login', form=form)
+
 
 @app.route("/signout")
 def signout():
+    flash('You have successfully logged out', 'danger')
     logout_user()
     return redirect(url_for('signin'))
-@app.route("/account")
+
+
+@app.route("/account", methods=['GET', 'POST'])
 @login_required
 def account():
-    return render_template('account.html',title="Account")
+    form = UpdateAccountForm()
+    if form.validate_on_submit():
+        current_user.username= form.username.data
+        current_user.email= form.email.data
+        db.session.commit()
+        flash("Your account details were updated successfully!")
+        return redirect(url_for('account'))
+    elif request.method=='GET':
+        form.username.data = current_user.username
+        form.email.data = current_user.email
+
+    image_file = url_for('static', filename='profile_images/' + current_user.image_file)
+    return render_template('account.html', title="Account", image_file=image_file,form=form)
