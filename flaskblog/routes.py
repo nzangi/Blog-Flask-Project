@@ -1,42 +1,43 @@
 from flask import redirect, flash, render_template, url_for, request
-from flaskblog.forms import SignUpForm, SignInForm, UpdateAccountForm
+from flaskblog.forms import SignUpForm, SignInForm, UpdateAccountForm, PostForm
 from flaskblog.models import User, Post
 from flaskblog import app, bcrypt, db
 from flask_login import login_user, current_user, logout_user, login_required
 import secrets, os
 from PIL import Image
 
-posts = [
-    {
-        'author': 'Nzangi',
-        'title': 'Blog post 1',
-        'content': 'First Blog Post',
-        'date': 'Dec 8 2023'
-    },
-    {
-        'author': 'Muoki',
-        'title': 'Blog post 2',
-        'content': 'Second Blog Post',
-        'date': 'Dec 7 2023'
-    },
-    {
-        'author': 'Kanee',
-        'title': 'Blog post 3',
-        'content': 'Third Blog Post',
-        'date': 'Dec 6 2023'
-    },
-    {
-        'author': 'Munyoki',
-        'title': 'Blog post 4',
-        'content': 'Fourth Blog Post',
-        'date': 'Dec 4 2023'
-    }
-]
+# posts = [
+#     {
+#         'author': 'Nzangi',
+#         'title': 'Blog post 1',
+#         'content': 'First Blog Post',
+#         'date': 'Dec 8 2023'
+#     },
+#     {
+#         'author': 'Muoki',
+#         'title': 'Blog post 2',
+#         'content': 'Second Blog Post',
+#         'date': 'Dec 7 2023'
+#     },
+#     {
+#         'author': 'Kanee',
+#         'title': 'Blog post 3',
+#         'content': 'Third Blog Post',
+#         'date': 'Dec 6 2023'
+#     },
+#     {
+#         'author': 'Munyoki',
+#         'title': 'Blog post 4',
+#         'content': 'Fourth Blog Post',
+#         'date': 'Dec 4 2023'
+#     }
+# ]
 
 
 @app.route("/")
 @app.route("/home")
 def home():
+    posts = Post.query.all()
     return render_template("home.html", posts=posts)
 
 
@@ -84,20 +85,19 @@ def signout():
     logout_user()
     return redirect(url_for('signin'))
 
+
 def save_picture(form_picture):
     random_hex = secrets.token_hex(8)
     _, file_extsnsion = os.path.splitext(form_picture.filename)
-    picture_filename= random_hex + file_extsnsion
-    picture_path = os.path.join(app.root_path,'static/profile_images',picture_filename)
+    picture_filename = random_hex + file_extsnsion
+    picture_path = os.path.join(app.root_path, 'static/profile_images', picture_filename)
     output_size = (125, 125)
     image = Image.open(form_picture)
     image.thumbnail(output_size)
     image.save(picture_path)
 
-
-
-
     return picture_filename
+
 
 @app.route("/account", methods=['GET', 'POST'])
 @login_required
@@ -105,7 +105,7 @@ def account():
     form = UpdateAccountForm()
     if form.validate_on_submit():
         if form.picture.data:
-            picture_file= save_picture(form.picture.data)
+            picture_file = save_picture(form.picture.data)
             current_user.image_file = picture_file
         current_user.username = form.username.data
         current_user.email = form.email.data
@@ -118,3 +118,17 @@ def account():
 
     image_file = url_for('static', filename='profile_images/' + current_user.image_file)
     return render_template('account.html', title="Account", image_file=image_file, form=form)
+
+
+@app.route("/post/new", methods=['GET', 'POST'])
+@login_required
+def new_post():
+    form = PostForm()
+    if form.validate_on_submit():
+        post = Post(title=form.title.data,post_content=form.content.data,author=current_user)
+        db.session.add(post)
+        db.session.commit()
+        flash("Your Post has been created!")
+        return redirect(url_for('home'))
+
+    return render_template('new_post.html', title="New Post", form=form)
