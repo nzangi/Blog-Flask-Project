@@ -1,37 +1,10 @@
-from flask import redirect, flash, render_template, url_for, request
+from flask import redirect, flash, render_template, url_for, request, abort
 from flaskblog.forms import SignUpForm, SignInForm, UpdateAccountForm, PostForm
 from flaskblog.models import User, Post
 from flaskblog import app, bcrypt, db
 from flask_login import login_user, current_user, logout_user, login_required
 import secrets, os
 from PIL import Image
-
-# posts = [
-#     {
-#         'author': 'Nzangi',
-#         'title': 'Blog post 1',
-#         'content': 'First Blog Post',
-#         'date': 'Dec 8 2023'
-#     },
-#     {
-#         'author': 'Muoki',
-#         'title': 'Blog post 2',
-#         'content': 'Second Blog Post',
-#         'date': 'Dec 7 2023'
-#     },
-#     {
-#         'author': 'Kanee',
-#         'title': 'Blog post 3',
-#         'content': 'Third Blog Post',
-#         'date': 'Dec 6 2023'
-#     },
-#     {
-#         'author': 'Munyoki',
-#         'title': 'Blog post 4',
-#         'content': 'Fourth Blog Post',
-#         'date': 'Dec 4 2023'
-#     }
-# ]
 
 
 @app.route("/")
@@ -88,8 +61,8 @@ def signout():
 
 def save_picture(form_picture):
     random_hex = secrets.token_hex(8)
-    _, file_extsnsion = os.path.splitext(form_picture.filename)
-    picture_filename = random_hex + file_extsnsion
+    _, file_extension = os.path.splitext(form_picture.filename)
+    picture_filename = random_hex + file_extension
     picture_path = os.path.join(app.root_path, 'static/profile_images', picture_filename)
     output_size = (125, 125)
     image = Image.open(form_picture)
@@ -125,10 +98,36 @@ def account():
 def new_post():
     form = PostForm()
     if form.validate_on_submit():
-        post = Post(title=form.title.data,post_content=form.content.data,author=current_user)
+        post = Post(title=form.title.data, post_content=form.content.data, author=current_user)
         db.session.add(post)
         db.session.commit()
         flash("Your Post has been created!")
         return redirect(url_for('home'))
 
-    return render_template('new_post.html', title="New Post", form=form)
+    return render_template('new_post.html', title="New Post", form=form, legend="New Post")
+
+
+@app.route("/post/<int:post_id>")
+def post(post_id):
+    post = Post.query.get_or_404(post_id)
+    return render_template("post.html", title=post.title, post=post)
+
+
+@app.route("/post/<int:post_id>/update", methods=['GET', 'POST'])
+def update_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    if post.author != current_user:
+        abort(403)
+
+    form = PostForm()
+    if form.validate_on_submit():
+        post.title = form.title.data
+        post.post_content = form.content.data
+        db.session.commit()
+        flash("Your Post has been Updated!")
+        return redirect(url_for('post', post_id=post.id))
+    elif request.method == 'GET':
+        form.title.data = post.title
+        form.content.data = post.post_content
+
+    return render_template('new_post.html', title="Update Post", form=form, legend="Update Post")
