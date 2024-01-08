@@ -1,9 +1,9 @@
-from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, BooleanField, TextAreaField
+from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError
+from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed
 from flaskblog.models import User
 from flask_login import current_user
-from flask_wtf.file import FileField, FileAllowed
 
 
 class SignUpForm(FlaskForm):
@@ -50,12 +50,6 @@ class UpdateAccountForm(FlaskForm):
                 raise ValidationError("That email is already taken,try another one!")
 
 
-class PostForm(FlaskForm):
-    title = StringField('Post Title', validators=[DataRequired()])
-    content = TextAreaField('Post Content', validators=[DataRequired()])
-    submit_post = SubmitField("Post")
-
-
 class RequestResetForm(FlaskForm):
     email = StringField('E-mail', validators=[DataRequired(), Email()])
     password_reset_button = SubmitField('Request Password Reset')
@@ -70,4 +64,3 @@ class PasswordResetForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired(), Length(min=8)])
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
     reset_password = SubmitField('Reset Password')
-
