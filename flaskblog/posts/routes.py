@@ -19,13 +19,13 @@ def new_post():
         flash("Your Post has been created!")
         return redirect(url_for('main.home'))
 
-    return render_template('new_post.html', title="New Post", form=form, legend="New Post")
+    return render_template('posts/new_post.html', title="New Post", form=form, legend="New Post")
 
 
 @posts.route("/post/<int:post_id>")
 def post(post_id):
     post = Post.query.get_or_404(post_id)
-    return render_template("post.html", title=post.title, post=post)
+    return render_template("posts/post.html", title=post.title, post=post)
 
 
 @posts.route("/post/<int:post_id>/update", methods=['GET', 'POST'])
@@ -45,7 +45,7 @@ def update_post(post_id):
         form.title.data = post.title
         form.content.data = post.post_content
 
-    return render_template('new_post.html', title="Update Post", form=form, legend="Update Post")
+    return render_template('posts/new_post.html', title="Update Post", form=form, legend="Update Post")
 
 
 @posts.route("/post/<int:post_id>/delete", methods=['POST'])
